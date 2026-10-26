@@ -1,6 +1,6 @@
 module github.com/quocbaong/profile-backend
 
-go 1.26.6
+go 1.26.0
 
 require (
 	github.com/gin-gonic/gin v1.12.0
