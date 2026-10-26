@@ -85,12 +85,13 @@ func (h *ProjectHandler) UpdateProject(c *gin.Context) {
 		return
 	}
 
-	if err := h.projectService.Update(id, &input); err != nil {
+	updated, err := h.projectService.Update(id, &input)
+	if err != nil {
 		response.BadRequest(c, err.Error(), err)
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Project updated successfully", input)
+	response.Success(c, http.StatusOK, "Project updated successfully", updated)
 }
 
 // Admin endpoint: Delete project

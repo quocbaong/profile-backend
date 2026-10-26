@@ -41,3 +41,48 @@ type ContactMessage struct {
 	IsRead    bool      `gorm:"default:false" json:"is_read"`
 	CreatedAt time.Time `json:"created_at"`
 }
+
+// ProfileSettings represents personal profile information and social links
+type ProfileSettings struct {
+	ID               uint      `gorm:"primaryKey" json:"id"`
+	Name             string    `gorm:"size:150;not null" json:"name"`
+	Title            string    `gorm:"size:200;not null" json:"title"`
+	Subtitle         string    `gorm:"size:200" json:"subtitle"`
+	AboutTitle       string    `gorm:"size:250" json:"about_title"`
+	AboutDescription string    `gorm:"type:text" json:"about_description"`
+	Email            string    `gorm:"size:150" json:"email"`
+	Phone            string    `gorm:"size:50" json:"phone"`
+	Address          string    `gorm:"size:250" json:"address"`
+	HeroImage        string    `gorm:"size:500" json:"hero_image"`
+	AboutImage       string    `gorm:"size:500" json:"about_image"`
+	ResumeURL        string    `gorm:"size:500" json:"resume_url"`
+	GithubURL        string    `gorm:"size:500" json:"github_url"`
+	LinkedinURL      string    `gorm:"size:500" json:"linkedin_url"`
+	FacebookURL      string    `gorm:"size:500" json:"facebook_url"`
+	InstagramURL     string    `gorm:"size:500" json:"instagram_url"`
+	UpdatedAt        time.Time `json:"updated_at"`
+}
+
+// ServiceItem represents a service offering
+type ServiceItem struct {
+	ID          uint      `gorm:"primaryKey" json:"id"`
+	Title       string    `gorm:"size:200;not null" json:"title"`
+	IconClass   string    `gorm:"size:100" json:"icon_class"`
+	Description string    `gorm:"type:text" json:"description"`
+	SortOrder   int       `gorm:"default:0" json:"sort_order"`
+	IsActive    bool      `gorm:"default:true" json:"is_active"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+// SkillItem represents a technology or tool skill
+type SkillItem struct {
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	Name      string    `gorm:"size:100;not null" json:"name"`
+	Category  string    `gorm:"size:100" json:"category"`
+	Color     string    `gorm:"size:50" json:"color"`
+	SortOrder int       `gorm:"default:0" json:"sort_order"`
+	IsActive  bool      `gorm:"default:true" json:"is_active"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}

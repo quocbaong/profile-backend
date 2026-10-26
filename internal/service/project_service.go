@@ -11,7 +11,7 @@ type ProjectService interface {
 	GetAll(onlyActive bool) ([]models.Project, error)
 	GetByID(id uint) (*models.Project, error)
 	Create(project *models.Project) error
-	Update(id uint, project *models.Project) error
+	Update(id uint, project *models.Project) (*models.Project, error)
 	Delete(id uint) error
 }
 
@@ -45,13 +45,13 @@ func (s *projectService) Create(project *models.Project) error {
 	return s.repo.Create(project)
 }
 
-func (s *projectService) Update(id uint, input *models.Project) error {
+func (s *projectService) Update(id uint, input *models.Project) (*models.Project, error) {
 	existing, err := s.repo.FindByID(id)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if existing == nil {
-		return errors.New("project not found")
+		return nil, errors.New("project not found")
 	}
 
 	existing.Title = input.Title
@@ -64,7 +64,10 @@ func (s *projectService) Update(id uint, input *models.Project) error {
 	existing.SortOrder = input.SortOrder
 	existing.IsActive = input.IsActive
 
-	return s.repo.Update(existing)
+	if err := s.repo.Update(existing); err != nil {
+		return nil, err
+	}
+	return existing, nil
 }
 
 func (s *projectService) Delete(id uint) error {
