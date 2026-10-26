@@ -8,7 +8,7 @@ import (
 type User struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
 	Username  string    `gorm:"uniqueIndex;size:100;not null" json:"username"`
-	Password  string    `gorm:"size:255;not null" json:"-"` // omit password in JSON responses
+	Password  string    `gorm:"size:255;not null" json:"-"` 
 	Name      string    `gorm:"size:150" json:"name"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -80,6 +80,7 @@ type SkillItem struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
 	Name      string    `gorm:"size:100;not null" json:"name"`
 	Category  string    `gorm:"size:100" json:"category"`
+	Icon      string    `gorm:"size:500" json:"icon"`
 	Color     string    `gorm:"size:50" json:"color"`
 	SortOrder int       `gorm:"default:0" json:"sort_order"`
 	IsActive  bool      `gorm:"default:true" json:"is_active"`
