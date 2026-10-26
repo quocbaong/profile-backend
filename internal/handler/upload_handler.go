@@ -32,8 +32,10 @@ var allowedExtensions = map[string]bool{
 	".webp": true,
 	".gif":  true,
 	".svg":  true,
+	".pdf":  true,
+	".doc":  true,
+	".docx": true,
 }
-
 func (h *UploadHandler) UploadFile(c *gin.Context) {
 	// 1. Kiểm tra cấu hình Supabase Storage
 	if h.cfg.SupabaseURL == "" || h.cfg.SupabaseKey == "" {
@@ -60,7 +62,7 @@ func (h *UploadHandler) UploadFile(c *gin.Context) {
 	// 4. Kiểm tra định dạng đuôi file
 	ext := strings.ToLower(filepath.Ext(file.Filename))
 	if !allowedExtensions[ext] {
-		response.BadRequest(c, "Định dạng file không hỗ trợ. Cho phép: .jpg, .jpeg, .png, .webp, .gif, .svg", nil)
+		response.BadRequest(c, "Định dạng file không hỗ trợ. Cho phép: ảnh (.jpg, .png, .webp, .svg) hoặc tài liệu (.pdf, .doc, .docx)", nil)
 		return
 	}
 
