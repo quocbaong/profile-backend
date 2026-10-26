@@ -19,6 +19,12 @@ type Config struct {
 	SupabaseURL         string
 	SupabaseKey         string
 	SupabaseBucket      string
+	SMTPHost            string
+	SMTPPort            string
+	SMTPUser            string
+	SMTPPassword        string
+	SMTPFrom            string
+	AdminEmail          string
 }
 
 // loadDotEnv: Tự động nạp file .env cục bộ nếu tồn tại (không phụ thuộc thư viện ngoài)
@@ -65,6 +71,12 @@ func LoadConfig() *Config {
 		SupabaseURL:         getEnv("SUPABASE_URL", ""),
 		SupabaseKey:         getEnv("SUPABASE_KEY", ""),
 		SupabaseBucket:      getEnv("SUPABASE_BUCKET", "portfolio"),
+		SMTPHost:            getEnv("SMTP_HOST", ""),
+		SMTPPort:            getEnv("SMTP_PORT", "587"),
+		SMTPUser:            getEnv("SMTP_USER", ""),
+		SMTPPassword:        getEnv("SMTP_PASSWORD", ""),
+		SMTPFrom:            getEnv("SMTP_FROM", ""),
+		AdminEmail:          getEnv("ADMIN_NOTIFICATION_EMAIL", getEnv("ADMIN_EMAIL", "")),
 	}
 }
 

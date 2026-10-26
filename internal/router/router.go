@@ -42,7 +42,7 @@ func SetupRouter(
 		// 1. PUBLIC ROUTES
 		// ========================
 		api.GET("/projects", projectH.GetPublicProjects)
-		api.POST("/contact", msgH.SubmitContact)
+		api.POST("/contact", middleware.ContactRateLimitMiddleware(), msgH.SubmitContact)
 		api.POST("/auth/login", authH.Login)
 		api.GET("/profile", profileH.GetProfile)
 		api.GET("/services", serviceH.GetPublicServices)
