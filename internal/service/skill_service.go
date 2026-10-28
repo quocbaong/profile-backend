@@ -56,6 +56,8 @@ func (s *skillService) Update(id uint, input *models.SkillItem) (*models.SkillIt
 
 	existing.Name = input.Name
 	existing.Category = input.Category
+	existing.SectionGroup = input.SectionGroup
+	existing.SubGroup = input.SubGroup
 	existing.Icon = input.Icon
 	existing.Color = input.Color
 	existing.SortOrder = input.SortOrder

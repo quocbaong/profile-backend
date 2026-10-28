@@ -66,7 +66,52 @@ func InitDB(cfg *config.Config) *gorm.DB {
 	// Seed admin user if configured in .env and not existing in DB
 	seedAdmin(db, cfg)
 
+	// Auto-backfill skill categories & sub-groups if needed
+	backfillSkillGroups(db)
+
 	return db
+}
+
+func backfillSkillGroups(db *gorm.DB) {
+	// 1. Cloud/DevOps -> Database: SQL Server, MongoDB, PostgreSQL, Redis, etc.
+	db.Model(&models.SkillItem{}).
+		Where("LOWER(name) LIKE '%sql%' OR LOWER(name) LIKE '%mongo%' OR LOWER(name) LIKE '%redis%' OR LOWER(name) LIKE '%postgres%' OR LOWER(name) LIKE '%minio%' OR LOWER(category) = 'database'").
+		Updates(map[string]interface{}{
+			"section_group": "cloud_devops",
+			"sub_group":     "database",
+		})
+
+	// 2. Cloud/DevOps -> Cloud, DevOps & Tools: Docker, Git, Firebase, etc.
+	db.Model(&models.SkillItem{}).
+		Where("LOWER(name) LIKE '%docker%' OR LOWER(name) LIKE '%git%' OR LOWER(name) LIKE '%firebase%' OR LOWER(name) LIKE '%supabase%' OR LOWER(name) LIKE '%linux%' OR LOWER(name) LIKE '%ci%' OR LOWER(category) = 'devops' OR LOWER(category) = 'tools'").
+		Updates(map[string]interface{}{
+			"section_group": "cloud_devops",
+			"sub_group":     "cloud_devops",
+		})
+
+	// 3. Frameworks/Libraries -> Frontend: React, Next, Vue, etc.
+	db.Model(&models.SkillItem{}).
+		Where("LOWER(name) LIKE '%react%' OR LOWER(name) LIKE '%next%' OR LOWER(name) LIKE '%vue%' OR LOWER(name) LIKE '%flutter%' OR LOWER(name) LIKE '%tailwind%' OR LOWER(name) LIKE '%redux%' OR LOWER(name) LIKE '%ant design%' OR (LOWER(category) = 'frontend' AND LOWER(name) NOT LIKE '%script%')").
+		Updates(map[string]interface{}{
+			"section_group": "frameworks_libraries",
+			"sub_group":     "frontend",
+		})
+
+	// 4. Frameworks/Libraries -> Backend: Spring Boot, Express, NestJS, etc.
+	db.Model(&models.SkillItem{}).
+		Where("(LOWER(name) LIKE '%spring%' OR LOWER(name) LIKE '%express%' OR LOWER(name) LIKE '%nest%' OR LOWER(name) LIKE '%node%' OR LOWER(name) LIKE '%fastapi%' OR LOWER(name) LIKE '%django%' OR LOWER(category) = 'backend') AND LOWER(name) NOT LIKE '%java%' AND LOWER(name) NOT LIKE '%go%'").
+		Updates(map[string]interface{}{
+			"section_group": "frameworks_libraries",
+			"sub_group":     "backend",
+		})
+
+	// 5. Languages: Java, JavaScript, TypeScript, Go, etc. (Always takes precedence)
+	db.Model(&models.SkillItem{}).
+		Where("(LOWER(name) LIKE '%java%' AND LOWER(name) NOT LIKE '%script%') OR LOWER(name) LIKE '%javascript%' OR LOWER(name) LIKE '%typescript%' OR LOWER(name) = 'go' OR LOWER(name) LIKE '%golang%' OR LOWER(category) = 'language'").
+		Updates(map[string]interface{}{
+			"section_group": "languages",
+			"sub_group":     "languages",
+		})
 }
 
 func seedAdmin(db *gorm.DB, cfg *config.Config) {

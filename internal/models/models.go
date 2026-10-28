@@ -79,9 +79,11 @@ type ServiceItem struct {
 type SkillItem struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
 	Name      string    `gorm:"size:100;not null" json:"name"`
-	Category  string    `gorm:"size:100" json:"category"`
-	Icon      string    `gorm:"size:500" json:"icon"`
-	Color     string    `gorm:"size:50" json:"color"`
+	Category     string    `gorm:"size:100" json:"category"`
+	SectionGroup string    `gorm:"size:50;default:'languages'" json:"section_group"` // "languages", "frameworks_libraries", "cloud_devops"
+	SubGroup     string    `gorm:"size:50;default:'languages'" json:"sub_group"`     // "languages", "frontend", "backend", "database", "cloud_devops"
+	Icon         string    `gorm:"size:500" json:"icon"`
+	Color        string    `gorm:"size:50" json:"color"`
 	SortOrder int       `gorm:"default:0" json:"sort_order"`
 	IsActive  bool      `gorm:"default:true" json:"is_active"`
 	CreatedAt time.Time `json:"created_at"`
