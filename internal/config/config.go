@@ -19,6 +19,8 @@ type Config struct {
 	SupabaseURL         string
 	SupabaseKey         string
 	SupabaseBucket      string
+	ResendAPIKey        string // REST API Port 443 (Resend.com)
+	BrevoAPIKey         string // REST API Port 443 (Brevo.com)
 	SMTPHost            string
 	SMTPPort            string
 	SMTPUser            string
@@ -71,6 +73,8 @@ func LoadConfig() *Config {
 		SupabaseURL:         getEnv("SUPABASE_URL", ""),
 		SupabaseKey:         getEnv("SUPABASE_KEY", ""),
 		SupabaseBucket:      getEnv("SUPABASE_BUCKET", "portfolio"),
+		ResendAPIKey:        getEnv("RESEND_API_KEY", ""),
+		BrevoAPIKey:         getEnv("BREVO_API_KEY", ""),
 		SMTPHost:            getEnv("SMTP_HOST", ""),
 		SMTPPort:            getEnv("SMTP_PORT", "587"),
 		SMTPUser:            getEnv("SMTP_USER", ""),

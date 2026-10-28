@@ -1,12 +1,16 @@
 package service
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"html"
+	"io"
 	"log"
 	"net"
+	"net/http"
 	"net/smtp"
 	"strings"
 	"time"
@@ -30,7 +34,8 @@ func NewEmailService(cfg *config.Config) EmailService {
 }
 
 func (s *smtpEmailService) IsConfigured() bool {
-	return s.cfg.SMTPHost != "" && s.cfg.SMTPPort != "" && s.cfg.SMTPUser != "" && s.cfg.SMTPPassword != ""
+	return s.cfg.ResendAPIKey != "" || s.cfg.BrevoAPIKey != "" ||
+		(s.cfg.SMTPHost != "" && s.cfg.SMTPPort != "" && s.cfg.SMTPUser != "" && s.cfg.SMTPPassword != "")
 }
 
 // SendAdminNotification sends an alert email to the admin/portfolio owner
@@ -83,8 +88,143 @@ func (s *smtpEmailService) SendAutoReply(msg *models.ContactMessage) error {
 	return s.sendMail([]string{msg.Email}, adminEmail, subject, body)
 }
 
-// sendMail delivers the email via STARTTLS (port 587/25) or direct TLS (port 465)
+// sendMail delegates to Resend API (443), Brevo API (443), or standard SMTP (587/465)
 func (s *smtpEmailService) sendMail(to []string, replyTo string, subject string, htmlBody string) error {
+	if s.cfg.ResendAPIKey != "" {
+		return s.sendViaResend(to, replyTo, subject, htmlBody)
+	}
+	if s.cfg.BrevoAPIKey != "" {
+		return s.sendViaBrevo(to, replyTo, subject, htmlBody)
+	}
+	return s.sendViaSMTP(to, replyTo, subject, htmlBody)
+}
+
+type resendRequest struct {
+	From    string   `json:"from"`
+	To      []string `json:"to"`
+	ReplyTo string   `json:"reply_to,omitempty"`
+	Subject string   `json:"subject"`
+	HTML    string   `json:"html"`
+}
+
+func (s *smtpEmailService) sendViaResend(to []string, replyTo string, subject string, htmlBody string) error {
+	from := s.cfg.SMTPFrom
+	if from == "" {
+		from = "Portfolio <onboarding@resend.dev>"
+	}
+
+	reqBody := resendRequest{
+		From:    from,
+		To:      to,
+		ReplyTo: replyTo,
+		Subject: subject,
+		HTML:    htmlBody,
+	}
+
+	jsonData, err := json.Marshal(reqBody)
+	if err != nil {
+		return fmt.Errorf("resend: failed to marshal payload: %w", err)
+	}
+
+	client := &http.Client{Timeout: 15 * time.Second}
+	req, err := http.NewRequest("POST", "https://api.resend.com/emails", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("resend: failed to create request: %w", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(s.cfg.ResendAPIKey))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("resend: request failed over https 443: %w", err)
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode >= 300 {
+		return fmt.Errorf("resend: api returned status %d: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	log.Printf("[EmailService] Successfully sent email to %v via Resend API (HTTPS port 443)", to)
+	return nil
+}
+
+type brevoSender struct {
+	Name  string `json:"name,omitempty"`
+	Email string `json:"email"`
+}
+
+type brevoRecipient struct {
+	Email string `json:"email"`
+}
+
+type brevoReplyTo struct {
+	Email string `json:"email"`
+}
+
+type brevoRequest struct {
+	Sender      brevoSender      `json:"sender"`
+	To          []brevoRecipient `json:"to"`
+	ReplyTo     *brevoReplyTo    `json:"replyTo,omitempty"`
+	Subject     string           `json:"subject"`
+	HTMLContent string           `json:"htmlContent"`
+}
+
+func (s *smtpEmailService) sendViaBrevo(to []string, replyTo string, subject string, htmlBody string) error {
+	senderEmail := s.cfg.SMTPUser
+	if senderEmail == "" {
+		senderEmail = "baonq8828@gmail.com"
+	}
+	senderName := "Nguyễn Quốc Bảo"
+
+	var recipients []brevoRecipient
+	for _, t := range to {
+		recipients = append(recipients, brevoRecipient{Email: t})
+	}
+
+	reqBody := brevoRequest{
+		Sender:      brevoSender{Name: senderName, Email: senderEmail},
+		To:          recipients,
+		Subject:     subject,
+		HTMLContent: htmlBody,
+	}
+
+	if replyTo != "" {
+		reqBody.ReplyTo = &brevoReplyTo{Email: replyTo}
+	}
+
+	jsonData, err := json.Marshal(reqBody)
+	if err != nil {
+		return fmt.Errorf("brevo: failed to marshal payload: %w", err)
+	}
+
+	client := &http.Client{Timeout: 15 * time.Second}
+	req, err := http.NewRequest("POST", "https://api.brevo.com/v3/smtp/email", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("brevo: failed to create request: %w", err)
+	}
+
+	req.Header.Set("api-key", strings.TrimSpace(s.cfg.BrevoAPIKey))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("brevo: request failed over https 443: %w", err)
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode >= 300 {
+		return fmt.Errorf("brevo: api returned status %d: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	log.Printf("[EmailService] Successfully sent email to %v via Brevo API (HTTPS port 443)", to)
+	return nil
+}
+
+// sendViaSMTP delivers the email via STARTTLS (port 587/25) or direct TLS (port 465)
+func (s *smtpEmailService) sendViaSMTP(to []string, replyTo string, subject string, htmlBody string) error {
 	host := s.cfg.SMTPHost
 	port := s.cfg.SMTPPort
 	addr := net.JoinHostPort(host, port)
